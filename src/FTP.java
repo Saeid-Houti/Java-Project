@@ -24,6 +24,8 @@ public class FTP extends Thread {
         PrintWriter to_client = null;
 
         try {
+        	
+        	while (true) {
             from_client = new BufferedReader(new InputStreamReader(nextClient.getInputStream()));
             to_client = new PrintWriter(nextClient.getOutputStream(), true);
 
@@ -45,13 +47,17 @@ public class FTP extends Thread {
                 } else if (whatClientWanted.startsWith("UPLOAD")) {
                     handleUpload(whatClientWanted, from_client, to_client);
 
-                } else {
+                } 
+                
+                
+                else {
                     // In case of cancel upload
                     to_client.println("Upload canceled.");
                 }
             } else {
                 to_client.println("Username or Password is wrong, or User not found");
             }
+        	}
 
         } catch (IOException ioe) {
             System.out.println("Error: " + ioe);
@@ -69,6 +75,7 @@ public class FTP extends Thread {
                 e.printStackTrace();
             }
         }
+        
     }
 
     private void handleUpload(String request, BufferedReader reader, PrintWriter writer) throws IOException {
