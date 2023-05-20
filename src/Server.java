@@ -44,7 +44,7 @@ public class Server {
                     try {
                         finalDnsSocket.receive(packet);// receive a datagram packet from the network
                         //The received data will be stored in the packet object.. which includes the buffer where the data will be written and the length of the data as seen in the above instance of DatagramPacket
-                        DNSService dnsServiceThread = new DNSService(finalDnsSocket);
+                        DNSService dnsServiceThread = new DNSService(finalDnsSocket); //the service should accept packet like this: DNSService dnsServiceThread = new DNSService(finalDnsSocket,packet);
                         dnsServiceThread.start();
                     } catch (IOException e) {
                         System.out.println(e.getMessage());
