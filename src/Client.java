@@ -1,128 +1,139 @@
-
-
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.net.Socket;
 import java.util.Scanner;
-import java.util.zip.*;
-import java.io.*;
+
 public class Client {
-    private static final String SERVER_ADDRESS = "localhost";
-    private static final int FTP_PORT = 8888;
-    private static final int DNS_PORT = 9999;
+    public static void main(String args[]) {
+        Socket ftpServer;
+        BufferedReader from_user;
+        BufferedReader from_ftpServer;
+        PrintWriter to_ftpServer;
 
-    public static void main(String[] args) {
+
         try {
-            FTPService();
-//             DNSService();
-        } catch (IOException ioe) {   
-        	
-            System.out.println(ioe);
-        }
-    }
+            ftpServer = new Socket("localhost", 9999);
 
-    private static void FTPService() throws IOException {
-        Socket socket = new Socket(SERVER_ADDRESS, FTP_PORT);
-        System.out.println("Connected to server: " + SERVER_ADDRESS + ":" + FTP_PORT);
+            from_user = new BufferedReader(new InputStreamReader(System.in));
+            from_ftpServer = new BufferedReader(new InputStreamReader(ftpServer.getInputStream()));
+            to_ftpServer = new PrintWriter(ftpServer.getOutputStream(), true);
+System.out.println(from_ftpServer.readLine());
+String ServicType=from_user.readLine();
+            String serviceWanted = ServicType;
 
-        BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(socket.getOutputStream()));
+            to_ftpServer.println(serviceWanted);
 
-        Scanner scanner = new Scanner(System.in);
+            if (!serviceWanted.equals("exit")) {
 
-        while (true) {
-            System.out.print("Enter command (UPLOAD, DOWNLOAD, QUIT): ");
-            String command = scanner.nextLine();
+                if (serviceWanted.equals("FTP")) {
 
-            if (command.equalsIgnoreCase("UPLOAD")) {
-                System.out.print("Enter filename: ");
-                String filename = scanner.nextLine();
+                    System.out.println("Please Enter your Username : ");
+                    String username = from_user.readLine();
+                    System.out.println("Please Enter Your Password : ");
+                    String password = from_user.readLine();
 
-                File file = new File(filename);
-                if (!file.exists() || file.isDirectory()) {
-                    System.out.println("File not found");
-                    continue;
+                    to_ftpServer.println(username);
+                    to_ftpServer.println(password);
+
+                    String response = from_ftpServer.readLine();
+                    System.out.println(response);
+
+                    if (response.equals("Correct Username and Password")) {
+//                        System.out.println("What service do you want? (DOWNLOAD, UPLOAD, CANCEL)");
+                    	System.out.println(from_ftpServer.readLine());
+                        String serviceNeeded = from_user.readLine();
+
+                        to_ftpServer.println(serviceNeeded);
+
+                        if (serviceNeeded.equals("UPLOAD")) {
+                            System.out.println("Enter the filename to upload: ");
+                            String filename = from_user.readLine();
+                            to_ftpServer.println("UPLOAD " + filename);
+
+                            response = from_ftpServer.readLine();
+                            System.out.println(response);
+
+                            if (response.startsWith("SUCCESS")) {
+                                System.out.println("Enter the file content: ");
+                                String content = from_user.readLine();
+                                to_ftpServer.println(content);
+
+                                response = from_ftpServer.readLine();
+                                System.out.println(response);
+                            }
+                        } else if (serviceNeeded.equals("DOWNLOAD")) {
+                            System.out.println("Enter the filename to download: ");
+                            String filename = from_user.readLine();
+                            to_ftpServer.println("DOWNLOAD " + filename);
+
+                            String fileSize = from_ftpServer.readLine();
+                            System.out.println("File size: " + fileSize);
+
+                            if (!fileSize.startsWith("ERROR")) {
+                                System.out.println("Enter the destination path: ");
+                                String destinationPath = from_user.readLine();
+                                to_ftpServer.println(destinationPath);
+
+                                response = from_ftpServer.readLine();
+                                System.out.println(response);
+                            }
+                        } else {
+                            System.out.println("Invalid service");
+                        }
+                    } else {
+                        System.out.println("Username or Password is wrong, or User not found");
+                    }
+                } else if (serviceWanted.equals("DNS")) {
+                    DatagramSocket client;
+                    Scanner kb;
+                    try {
+                        client = new DatagramSocket();
+                        kb = new Scanner(System.in);
+                        System.out.print("domain name: ");
+                        String message = kb.nextLine();
+
+                        byte[] data = message.getBytes();
+                        DatagramPacket packet = new DatagramPacket(data, data.length,
+                                InetAddress.getLocalHost(), 5000);
+                        client.send(packet);
+
+                        byte[] receivedData = new byte[1000];
+                        DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
+
+                        // Receive packets until a response is received
+                        boolean receivedResponse = false;
+                        while (!receivedResponse) {
+                            client.receive(receivedPacket);
+                            if (receivedPacket.getLength() > 0) {
+                                System.out.printf("%s\n", new String(receivedPacket.getData(), 0, receivedPacket.getLength()));
+                                receivedResponse = true;
+                            }
+                        }
+
+                        // Close the socket after receiving the response
+                        client.close();
+
+                    } catch (IOException e) {
+                        System.exit(1);
+                    }
+                    
                 }
 
-                long fileSize = file.length();
-                writer.write("UPLOAD " + filename);
-                writer.newLine();
-                writer.flush();
-
-                writer.write(String.valueOf(fileSize));
-                writer.newLine();
-                writer.flush();
-
-                FileInputStream fileInputStream = new FileInputStream(file);
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-
-                while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-                    writer.write(new String(buffer, 0, bytesRead));
-                }
-
-                fileInputStream.close();
-                writer.flush();
-
-                String response = reader.readLine();
-                System.out.println(response);
-            } else if (command.equalsIgnoreCase("DOWNLOAD")) {
-                System.out.print("Enter filename: ");
-                String filename = scanner.nextLine();
-
-                writer.write("DOWNLOAD " + filename);
-                writer.newLine();
-                writer.flush();
-
-                String fileSizeStr = reader.readLine();
-                long fileSize = Long.parseLong(fileSizeStr);
-                if (fileSize == 0) {
-                    System.out.println("File not found");
-                    continue;
-                }
-
-                FileOutputStream fileOutputStream = new FileOutputStream(filename);
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-
-                while (fileSize > 0 && (bytesRead = socket.getInputStream().read(buffer)) != -1) {
-                    fileOutputStream.write(buffer, 0, bytesRead);
-                    fileSize -= bytesRead;
-                }
-
-                fileOutputStream.close();
-                System.out.println("File downloaded successfully");
-            } else if (command.equalsIgnoreCase("QUIT")) {
-                break;
+                	
+                	
+                
             } else {
-                System.out.println("Invalid command");
+                System.out.println("Thanks for being with us, Bye!!");
             }
+
+            ftpServer.close();
+        } catch (IOException ioe) {
+            System.out.println("Error: " + ioe);
         }
-
-        reader.close();
-        writer.close();
-        socket.close();
-    }
-
-    public static void DNSService() throws IOException {
-        InetAddress serverAddress = InetAddress.getByName("localhost");
-
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter the domain name or IP address: ");
-        String query = scanner.nextLine();
-
-        DatagramSocket socket = new DatagramSocket();
-        byte[] sendData = query.getBytes();
-
-        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, serverAddress, DNS_PORT);
-        socket.send(sendPacket);
-
-        byte[] receiveData = new byte[1024];
-        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-        socket.receive(receivePacket);
-
-        String response = new String(receivePacket.getData(), 0, receivePacket.getLength());
-        System.out.println("DNS Lookup Result:\n" + response);
-
-        socket.close();
     }
 }
