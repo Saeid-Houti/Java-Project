@@ -8,11 +8,12 @@ public class Server {
 
     public static void main(String[] args) {
         try {
-            ServerSocket server = new ServerSocket(FTP_PORT);
+            ServerSocket ftpServerSocket = new ServerSocket(FTP_PORT);
             DatagramSocket dnsSocket = null;
 
-            System.out.println("The server is waiting for the client to connect at port number: " + server.getLocalPort());
+            System.out.println("The server is waiting for the client to connect....");
 
+            //create DatagramSocket instance on dns port
             try {
                 dnsSocket = new DatagramSocket(DNS_PORT);
             } catch (SocketException e) {
@@ -20,16 +21,38 @@ public class Server {
                 e.printStackTrace();
                 return;
             }
+            
+            Thread ftpListenerThread = new Thread(() -> {//thread for FTP
+                while (true) {
+                    try {
+                        Socket ftpClientSocket = ftpServerSocket.accept();
+                        FTPService ftpServiceThread = new FTPService(ftpClientSocket);
+                        ftpServiceThread.start();
+                    } catch (IOException e) {
+                        System.out.println("Error accepting FTP client connection: " + e.getMessage());
+                    }
+                }
+            });
+            ftpListenerThread.start();
 
-            while (true) {
-                Socket client = server.accept();
+            final DatagramSocket finalDnsSocket = dnsSocket; // Declare final reference because it was giving: Local variable dnsSocket defined in an enclosing scope must be final or effectively final
+            Thread dnsListenerThread = new Thread(() -> {//thread for DNS
+                byte[] buffer = new byte[1024];
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
 
-                FTPService ftpServiceThread = new FTPService(client);
-                ftpServiceThread.start();
+                while (true) {
+                    try {
+                        finalDnsSocket.receive(packet);// receive a datagram packet from the network
+                        //The received data will be stored in the packet object.. which includes the buffer where the data will be written and the length of the data as seen in the above instance of DatagramPacket
+                        DNSService dnsServiceThread = new DNSService(finalDnsSocket);
+                        dnsServiceThread.start();
+                    } catch (IOException e) {
+                        System.out.println(e.getMessage());
+                    }
+                }
+            });
+            dnsListenerThread.start();
 
-//                DNSService dnsServiceThread = new DNSService(dnsSocket);
-//                dnsServiceThread.start();
-            }
         } catch (IOException ioe) {
             System.out.println(ioe);
         }
