@@ -14,7 +14,8 @@ public class Client {
         try {
             FTPService();
 //             DNSService();
-        } catch (IOException ioe) {
+        } catch (IOException ioe) {   
+        	
             System.out.println(ioe);
         }
     }
