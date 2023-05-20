@@ -95,28 +95,23 @@ public class Client {
                     Scanner kb;
                     try {
                     	while (true) {
-                        client = new DatagramSocket();
-                        kb = new Scanner(System.in);
-                        System.out.print("domain name: ");
-                        String message = kb.nextLine();
+                    		 client = new DatagramSocket();
+                             kb = new Scanner(System.in);
+                             System.out.print("Enter the domain name or IP address to resolve: ");
+                             String message = kb.nextLine();
 
-                        byte[] data = message.getBytes();
-                        DatagramPacket packet = new DatagramPacket(data, data.length,
-                                InetAddress.getLocalHost(), 5000);
-                        client.send(packet);
+                             byte[] data = message.getBytes();
+                             DatagramPacket packet = new DatagramPacket(data, data.length, InetAddress.getLocalHost(), 5000);
+                             client.send(packet);
 
-                        byte[] receivedData = new byte[1000];
-                        DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
+                             byte[] receivedData = new byte[1000];
+                             DatagramPacket receivedPacket = new DatagramPacket(receivedData, receivedData.length);
 
-                        // Receive packets until a response is received
-                        boolean receivedResponse = false;
-                        while (!receivedResponse) {
-                            client.receive(receivedPacket);
-                            if (receivedPacket.getLength() > 0) {
-                                System.out.printf("%s\n", new String(receivedPacket.getData(), 0, receivedPacket.getLength()));
-                                receivedResponse = true;
-                            }
-                        }
+                             // Receive response packet
+                             client.receive(receivedPacket);
+                             if (receivedPacket.getLength() > 0) {
+                                 System.out.printf("%s\n", new String(receivedPacket.getData(), 0, receivedPacket.getLength()));
+                             }
 
                         // Close the socket after receiving the response
                         client.close();
@@ -128,7 +123,7 @@ public class Client {
                 }
 
             } else {
-                System.out.println("Thanks for being with us, Bye!!");
+                System.out.println("Quitting the service");
             }
 
             ftpServer.close();

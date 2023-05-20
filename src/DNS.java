@@ -33,50 +33,89 @@ public class DNS extends Thread {
 			{ "www.toyota.com", "212.77.199.224" },
 			{ "www.toyota.com", "212.77.199.203" },
 			{ "www.gmc.com", "2.22.247.241" },
+			{ "87.248.122.122", "www.yahoo.com" },
 			{ "www.mit.edu", "18.9.22.169" }, { "www.cmu.edu", "128.2.10.162" } };
 
 	public void run() {
-		
-		
-		try {
-			server = new DatagramSocket(5000);
-		} catch (SocketException socketException) {
-			System.exit(1);
-		}
-		while (true) {
-			try {
-				byte[] data = new byte[100];
-				DatagramPacket packet = new DatagramPacket(data, data.length);
-				server.receive(packet);
-	/*			System.out.printf("Received packet from client %s:%s with length %s with the body:\n%s\n",
-								packet.getAddress(),
-								packet.getPort(),
-								packet.getLength(),
-								new String(packet.getData(), 0, packet.getLength()));
-	*/
-				String domain_name = (new String(data, 0, data.length)).trim();
+        try {
+            server = new DatagramSocket(5000);
+        } catch (SocketException socketException) {
+            System.exit(1);
+        }
+        while (true) {
+            try {
+                byte[] data = new byte[100];
+                DatagramPacket packet = new DatagramPacket(data, data.length);
+                server.receive(packet);
 
-				boolean found = false;
-				String response = new String("");
-				for (int i = 0; i < DNSlist.length; i++) {
-					if (DNSlist[i][0].equals(domain_name)) {
-						response = response + "Name: " + DNSlist[i][0] + "\tIP: " + DNSlist[i][1] + "\n";
-						found = true;
-					}
-				}
-				if (!found)
-					response = response + "Cannot resolve Name to IP ... ";
-				response = response + "\n";
+                String query = new String(data, 0, packet.getLength()).trim();
+                String response = "";
 
-				byte[] r = response.getBytes();
-				DatagramPacket sendPacket = new DatagramPacket(r, r.length, packet.getAddress(), packet.getPort());
-				server.send(sendPacket);
-				
-			 } catch (IOException ioe) {
-		            System.out.println("Error: " + ioe);
-		        }
-		}
-	}
-	
+                if (isValidIPAddress(query)) {
+                    response = findDomainNameByIPAddress(query);
+                } else {
+                    response = findIPAddressByDomainName(query);
+                }
+
+                byte[] r = response.getBytes();
+                DatagramPacket sendPacket = new DatagramPacket(r, r.length, packet.getAddress(), packet.getPort());
+                server.send(sendPacket);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private boolean isValidIPAddress(String query) {
+        String[] octets = query.split("\\.");
+        if (octets.length != 4) {
+            return false;
+        }
+        for (String octet : octets) {
+            int num = Integer.parseInt(octet);
+            if (num < 0 || num > 255) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String findIPAddressByDomainName(String query) {
+        boolean found = false;
+        String response = "";
+
+        for (int i = 0; i < DNSlist.length; i++) {
+            if (DNSlist[i][0].equals(query)) {
+                response = "Domain: " + DNSlist[i][0] + "\tIP: " + DNSlist[i][1];
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            response = "Cannot resolve Domain to IP.";
+        }
+
+        return response;
+    }
+
+    private String findDomainNameByIPAddress(String query) {
+        boolean found = false;
+        String response = "";
+
+        for (int i = 0; i < DNSlist.length; i++) {
+            if (DNSlist[i][1].equals(query)) {
+                response = "IP: " + DNSlist[i][1] + "\tDomain: " + DNSlist[i][0];
+                found = true;
+                break;
+            }
+        }
+
+        if (!found) {
+            response = "Cannot resolve IP to Domain.";
+        }
+
+        return response;
+    }
 	
 }
