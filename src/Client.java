@@ -1,4 +1,7 @@
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -29,78 +32,72 @@ public class Client {
 
             if (!serviceWanted.equals("exit")) {
 
-                if (serviceWanted.equals("FTP")) {
-                    while (true) {
-                        System.out.println("Please Enter your Username : ");
-                        String username = from_user.readLine();
-                        System.out.println("Please Enter Your Password : ");
-                        String password = from_user.readLine();
+            	 if (serviceWanted.equals("FTP")) {
+                     while (true) {
+                         System.out.println("Please enter your username: ");
+                         String username = from_user.readLine();
+                         System.out.println("Please enter your password: ");
+                         String password = from_user.readLine();
 
-                        to_ftpServer.println(username);
-                        to_ftpServer.println(password);
+                         to_ftpServer.println(username);
+                         to_ftpServer.println(password);
 
-                        String response = from_ftpServer.readLine();
-                        System.out.println(response);
+                         String response = from_ftpServer.readLine();
+                         System.out.println(response);
 
-                        if (response.equals("Correct Username and Password")) {
-                        	
-                        	System.out.println(from_ftpServer.readLine());
-                        	while (true) {
-                        		String serviceNeeded = from_user.readLine();
-                        		
-                        		
-                        		
-                        		if (serviceNeeded.equals("UPLOAD")) {
-                        			to_ftpServer.println(serviceNeeded);
-                        			System.out.println("Enter the filename to upload: ");
-                        			String filename = from_user.readLine();
-                        			to_ftpServer.println("UPLOAD " + filename);
-                        			
-                        			response = from_ftpServer.readLine();
-                        			System.out.println(response);
-                        			
-                        			if (response.startsWith("SUCCESS")) {
-                        				System.out.println("Enter the file content: ");
-                        				String content = from_user.readLine();
-                        				to_ftpServer.println(content);
-                        				
-                        				response = from_ftpServer.readLine();
-                        				System.out.println(response);
-                        				break;
-                        			}
-                        			if (response.startsWith("Canceled.")) {
-                        				break;
-                        			}
-                        		} else if (serviceNeeded.equals("DOWNLOAD")) {
-                        			to_ftpServer.println(serviceNeeded);
-                        			System.out.println("Enter the filename to download: ");
-                        			String filename = from_user.readLine();
-                        			to_ftpServer.println("DOWNLOAD " + filename);
-                        			
-                        			String fileSize = from_ftpServer.readLine();
-                        			System.out.println("File size: " + fileSize);
-                        			if (fileSize.equals("Canceled.")) break;
-                        			if (!fileSize.startsWith("ERROR")) {
-                        			    System.out.println("Enter the destination path: ");
-                        			    String destinationPath = from_user.readLine();
-                        			    to_ftpServer.println(destinationPath);
+                         if (response.equals("Correct Username and Password")) {
 
-                        			    response = from_ftpServer.readLine();
-                        			    System.out.println(response);
-                        			    break;
-                        			}
+                             while (true) {
+                            	 BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+                                 BufferedReader serverReader = new BufferedReader(new InputStreamReader(ftpServer.getInputStream()));
+                                 PrintWriter writer = new PrintWriter(ftpServer.getOutputStream(), true);
 
-                        		} 
-                        		else if (serviceNeeded.equals("CANCEL")) System.exit(1);
-                        		else {
-                        			System.out.println("Invalid service");
-                        		}
-                        	}
-                        	break;
-                        } else {
-                            System.out.println("Username or Password is wrong, or User not found");
-                        }
-                    }
+                                 System.out.println("Connected to server. Enter 'UPLOAD' or 'DOWNLOAD' to continue:");
+                                 String option = consoleReader.readLine();
+                                 writer.println(option);
+
+                                 if (option.equals("DOWNLOAD")) {
+                                     System.out.print("Enter the file name to download: ");
+                                     String fileName = consoleReader.readLine();
+                                     writer.println(fileName);
+
+                                     String line;
+                                     while (!(line = serverReader.readLine()).equals("EOF")) {
+                                         System.out.println(line);
+                                     }
+                                     System.out.println("Download completed.");
+                                 } else if (option.equals("UPLOAD")) {
+                                     System.out.print("Enter the file path to upload: ");
+                                     String filePath = consoleReader.readLine();
+                                     File file = new File(filePath);
+
+                                     if (file.exists()) {
+                                         long fileSize = file.length();
+                                         if (fileSize > 1024) {
+                                             System.out.println("File size exceeds the maximum limit of 1KB");
+                                         } else {
+                                             writer.println(file.getName());
+                                             writer.println(fileSize);
+                                             BufferedReader fileReader = new BufferedReader(new FileReader(file));
+
+                                             String line;
+                                             while ((line = fileReader.readLine()) != null) {
+                                                 writer.println(line);
+                                             }
+
+                                             fileReader.close();
+                                             writer.println("EOF");  // End of file marker
+                                             System.out.println("Upload completed.");
+                                         }
+                                     } else {
+                                         System.out.println("File not found.");
+                                     }
+                                 }
+                             }
+                         } else {
+                             System.out.println("Username or Password is wrong, or User not found");
+                         }
+                     }
                 } else if (serviceWanted.equals("DNS")) {
                     DatagramSocket client;
                     Scanner kb;

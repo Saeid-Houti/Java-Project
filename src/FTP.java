@@ -1,6 +1,9 @@
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -8,10 +11,10 @@ import java.net.Socket;
 import java.io.FileInputStream;
 
 public class FTP extends Thread {
-    private static final String USER_HOME = System.getProperty("user.home");
-    private static final String UPLOAD_DIR = USER_HOME + "/Desktop/upload/directory";
-    private static final String DOWNLOAD_DIR = USER_HOME + "/Desktop/download/directory";
-    private static final int MAX_FILE_SIZE = 1024 * 1024; // 1MB
+//    private static final int PORT = 12345;
+    private static final String DOWNLOAD_PATH = "C:/Users/saood/Desktop";
+    private static final String UPLOAD_PATH = "C:/Users/saood/Desktop/upload/";
+    private static final int MAX_FILE_SIZE = 1024; // Maximum file size in bytes (1KB)
 
     private final Socket nextClient;
 
@@ -45,20 +48,27 @@ public class FTP extends Thread {
                 System.out.println("Working fine");
                 
                 while (true) {
-                	to_client.println("What service do you want? (DOWNLOAD, UPLOAD, CANCEL)");
-                	
-                	
-                	String whatClientWanted = from_client.readLine();
-                	if (whatClientWanted.startsWith("DOWNLOAD")) {
-                		handleDownload(whatClientWanted, from_client, to_client);
-                		
-                	} else if (whatClientWanted.startsWith("UPLOAD")) {
-                		System.out.println("what client wanted" + whatClientWanted);
-                		handleUpload(whatClientWanted, from_client, to_client);
-                		
-                	} else if (whatClientWanted.startsWith("CANCEL")) {
-                		to_client.println("Canceled.");break;
-                	}
+                	  BufferedReader reader = new BufferedReader(new InputStreamReader(nextClient.getInputStream()));
+                      PrintWriter writer = new PrintWriter(nextClient.getOutputStream(), true);
+
+                      String request = reader.readLine();
+                      if (request.equals("DOWNLOAD")) {
+                          String fileName = reader.readLine();
+                          sendFileToClient(fileName, writer);
+                      } else if (request.equals("UPLOAD")) {
+                          String fileName = reader.readLine();
+                          long fileSize = Long.parseLong(reader.readLine());
+
+                          if (fileSize > MAX_FILE_SIZE) {
+                              writer.println("ERROR: File size exceeds the maximum limit of 1KB");
+                          } else {
+                              receiveFileFromClient(fileName, fileSize, reader);
+                          }
+                      }
+
+                      // Close the connection
+                      nextClient.close();
+                      System.out.println("Client disconnected: " + nextClient.getInetAddress().getHostAddress());
                 }
         } catch (IOException ioe) {
             System.out.println("Error: " + ioe);
@@ -70,76 +80,42 @@ public class FTP extends Thread {
                 }
                 if (to_client != null) to_client.close();
             } catch (IOException e) {e.printStackTrace();}
-        }}
-
-    private void handleUpload(String request, BufferedReader reader, PrintWriter writer) throws IOException {
-    	String readerLine = reader.readLine();
-    	String filename = readerLine.substring(readerLine.indexOf(" ") + 1);
-        if (filename.isEmpty() || filename.contains("/") || filename.contains("\\")) {
-            writer.println("ERROR: Invalid filename");
-            return;
+        }
         }
 
-        String uploadFilePath = UPLOAD_DIR + File.separator + filename;
-        FileOutputStream fileOutputStream = new FileOutputStream(uploadFilePath);
+    private static void sendFileToClient(String fileName, PrintWriter writer) throws IOException {
+        File file = new File(DOWNLOAD_PATH + File.separator + fileName);
 
-        long fileSize = Long.parseLong(reader.readLine());
-        if (fileSize > MAX_FILE_SIZE) {
-            writer.println("ERROR: File size exceeds the maximum allowed limit (" + MAX_FILE_SIZE + " bytes)");
-            fileOutputStream.close();
-            return;
-        }
+        if (file.exists()) {
+            BufferedReader fileReader = new BufferedReader(new FileReader(file));
+            String line;
 
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = nextClient.getInputStream().read(buffer)) != -1) {
-            fileOutputStream.write(buffer, 0, bytesRead);
+            while ((line = fileReader.readLine()) != null) {
+                writer.println(line);
+            }
+
+            fileReader.close();
+            writer.println("EOF");  // End of file marker
+            System.out.println("File sent: " + file.getName());
+        } else {
+            writer.println("ERROR: File not found");
         }
-        fileOutputStream.close();
-        writer.println("SUCCESS: File uploaded successfully");
-        return;
     }
 
-    private void handleDownload(String request, BufferedReader reader, PrintWriter writer) throws IOException {
-        String readerLine = reader.readLine();
-        String filename = readerLine.substring(readerLine.indexOf(" ") + 1);
-        if (filename.isEmpty()) {
-            writer.println("ERROR: Invalid filename");
-            return;
+    private static void receiveFileFromClient(String fileName, long fileSize, BufferedReader reader) throws IOException {
+        File file = new File(UPLOAD_PATH + fileName);
+        BufferedWriter fileWriter = new BufferedWriter(new FileWriter(file));
+
+        long bytesReceived = 0;
+        String line;
+        while (bytesReceived < fileSize && (line = reader.readLine()) != null) {
+            fileWriter.write(line);
+            fileWriter.newLine();
+            bytesReceived += line.getBytes().length + 1; // Account for newline character
         }
 
-        String downloadFilePath = DOWNLOAD_DIR + File.separator + filename;
-        File file = new File(downloadFilePath);
-
-        if (!file.exists() || file.isDirectory()) {
-            writer.println("ERROR: File not found");
-            return;
-        }
-
-        long fileSize = file.length();
-        writer.println(fileSize);
-
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-
-        // Read destination path from the client
-        String destinationPath = reader.readLine();
-
-        // Create the destination file
-        File destinationFile = new File(destinationPath);
-        FileOutputStream fileOutputStream = new FileOutputStream(destinationFile);
-
-        // Write the downloaded file to the destination path
-        try (FileInputStream fileInputStream = new FileInputStream(file)) {
-            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
-            }
-        }
-
-        fileOutputStream.close();
-
-        writer.println("SUCCESS: File downloaded and saved successfully");
-        return;
+        fileWriter.close();
+        System.out.println("File received: " + file.getName());
     }
 
 }
