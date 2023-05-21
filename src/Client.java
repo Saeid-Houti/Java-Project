@@ -43,49 +43,59 @@ public class Client {
                         System.out.println(response);
 
                         if (response.equals("Correct Username and Password")) {
-                            System.out.println(from_ftpServer.readLine());
-                            String serviceNeeded = from_user.readLine();
-
-                            to_ftpServer.println(serviceNeeded);
-
-                            if (serviceNeeded.equals("UPLOAD")) {
-                                System.out.println("Enter the filename to upload: ");
-                                String filename = from_user.readLine();
-                                to_ftpServer.println("UPLOAD " + filename);
-
-                                response = from_ftpServer.readLine();
-                                System.out.println(response);
-
-                                if (response.startsWith("SUCCESS")) {
-                                    System.out.println("Enter the file content: ");
-                                    String content = from_user.readLine();
-                                    to_ftpServer.println(content);
-
-                                    response = from_ftpServer.readLine();
-                                    System.out.println(response);
-                                }
-                                if (response.startsWith("CANCEL")) {
-                                    break;
-                                }
-                            } else if (serviceNeeded.equals("DOWNLOAD")) {
-                                System.out.println("Enter the filename to download: ");
-                                String filename = from_user.readLine();
-                                to_ftpServer.println("DOWNLOAD " + filename);
-
-                                String fileSize = from_ftpServer.readLine();
-                                System.out.println("File size: " + fileSize);
-
-                                if (!fileSize.startsWith("ERROR")) {
-                                    System.out.println("Enter the destination path: ");
-                                    String destinationPath = from_user.readLine();
-                                    to_ftpServer.println(destinationPath);
-
-                                    response = from_ftpServer.readLine();
-                                    System.out.println(response);
-                                }
-                            } else {
-                                System.out.println("Invalid service");
-                            }
+                        	
+                        	System.out.println(from_ftpServer.readLine());
+                        	while (true) {
+                        		String serviceNeeded = from_user.readLine();
+                        		
+                        		
+                        		
+                        		if (serviceNeeded.equals("UPLOAD")) {
+                        			to_ftpServer.println(serviceNeeded);
+                        			System.out.println("Enter the filename to upload: ");
+                        			String filename = from_user.readLine();
+                        			to_ftpServer.println("UPLOAD " + filename);
+                        			
+                        			response = from_ftpServer.readLine();
+                        			System.out.println(response);
+                        			
+                        			if (response.startsWith("SUCCESS")) {
+                        				System.out.println("Enter the file content: ");
+                        				String content = from_user.readLine();
+                        				to_ftpServer.println(content);
+                        				
+                        				response = from_ftpServer.readLine();
+                        				System.out.println(response);
+                        				break;
+                        			}
+                        			if (response.startsWith("Canceled.")) {
+                        				break;
+                        			}
+                        		} else if (serviceNeeded.equals("DOWNLOAD")) {
+                        			to_ftpServer.println(serviceNeeded);
+                        			System.out.println("Enter the filename to download: ");
+                        			String filename = from_user.readLine();
+                        			to_ftpServer.println("DOWNLOAD " + filename);
+                        			
+                        			String fileSize = from_ftpServer.readLine();
+                        			System.out.println("File size: " + fileSize);
+                        			if (fileSize.equals("Canceled.")) break;
+                        			if (!fileSize.startsWith("ERROR")) {
+                        				System.out.println("Enter the destination path: ");
+                        				String destinationPath = from_user.readLine();
+                        				to_ftpServer.println(destinationPath);
+                        				
+                        				response = from_ftpServer.readLine();
+                        				System.out.println(response);
+                        				break;
+                        			}
+                        		} 
+                        		else if (serviceNeeded.equals("CANCEL")) System.exit(1);
+                        		else {
+                        			System.out.println("Invalid service");
+                        		}
+                        	}
+                        	break;
                         } else {
                             System.out.println("Username or Password is wrong, or User not found");
                         }
@@ -130,5 +140,9 @@ public class Client {
         } catch (IOException ioe) {
             System.out.println("Error: " + ioe);
         }
+    }
+    
+    public static void askCreds() {
+    	
     }
 }

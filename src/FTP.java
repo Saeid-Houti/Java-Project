@@ -24,40 +24,42 @@ public class FTP extends Thread {
         PrintWriter to_client = null;
 
         try {
-        	
+        	String username = null;
+        	String password = null;
         	while (true) {
-            from_client = new BufferedReader(new InputStreamReader(nextClient.getInputStream()));
-            to_client = new PrintWriter(nextClient.getOutputStream(), true);
-
-            String username = from_client.readLine();
-            String password = from_client.readLine();
-            System.out.println(username);
-            System.out.println(password);
-
-            if (username.equals("123") && password.equals("123")) {
+	            from_client = new BufferedReader(new InputStreamReader(nextClient.getInputStream()));
+	            to_client = new PrintWriter(nextClient.getOutputStream(), true);
+	
+	            username = from_client.readLine();
+	            password = from_client.readLine();
+	            System.out.println(username);
+	            System.out.println(password);
+	            
+	            if (username.equals("123") && password.equals("123")) break;
+	            to_client.println("Username or Password is wrong, or User not found");
+        	}
+            boolean isValid = false;
+            
                 to_client.println("Correct Username and Password");
                 System.out.println("Working fine");
-
-                to_client.println("What service do you want? (DOWNLOAD, UPLOAD, CANCEL)");
-
-                String whatClientWanted = from_client.readLine();
-                if (whatClientWanted.startsWith("DOWNLOAD")) {
-                    handleDownload(whatClientWanted, from_client, to_client);
-
-                } else if (whatClientWanted.startsWith("UPLOAD")) {
-                    handleUpload(whatClientWanted, from_client, to_client);
-
-                } 
                 
-                
-                else {
-                    // In case of cancel upload
-                    to_client.println("Upload canceled.");
+                while (true) {
+                	to_client.println("What service do you want? (DOWNLOAD, UPLOAD, CANCEL)");
+                	
+                	
+                	String whatClientWanted = from_client.readLine();
+                	if (whatClientWanted.startsWith("DOWNLOAD")) {
+                		handleDownload(whatClientWanted, from_client, to_client);
+                		
+                	} else if (whatClientWanted.startsWith("UPLOAD")) {
+                		handleUpload(whatClientWanted, from_client, to_client);
+                		
+                	} else if (whatClientWanted.startsWith("CANCEL")) {
+                		to_client.println("Canceled.");
+                		break;
+                	}
                 }
-            } else {
-                to_client.println("Username or Password is wrong, or User not found");
-            }
-        	}
+        	
 
         } catch (IOException ioe) {
             System.out.println("Error: " + ioe);
