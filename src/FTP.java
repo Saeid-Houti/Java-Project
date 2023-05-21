@@ -52,36 +52,28 @@ public class FTP extends Thread {
                 		handleDownload(whatClientWanted, from_client, to_client);
                 		
                 	} else if (whatClientWanted.startsWith("UPLOAD")) {
+                		System.out.println("what client wanted" + whatClientWanted);
                 		handleUpload(whatClientWanted, from_client, to_client);
                 		
                 	} else if (whatClientWanted.startsWith("CANCEL")) {
-                		to_client.println("Canceled.");
-                		break;
+                		to_client.println("Canceled.");break;
                 	}
                 }
-        	
-
         } catch (IOException ioe) {
             System.out.println("Error: " + ioe);
-        
         } finally {
             try {
                 nextClient.close();
                 if (from_client != null) {
                     from_client.close();
                 }
-                if (to_client != null) {
-                    to_client.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        
-    }
+                if (to_client != null) to_client.close();
+            } catch (IOException e) {e.printStackTrace();}
+        }}
 
     private void handleUpload(String request, BufferedReader reader, PrintWriter writer) throws IOException {
-        String filename = request.substring(request.indexOf(' ') + 1);
+    	String readerLine = reader.readLine();
+    	String filename = readerLine.substring(readerLine.indexOf(" ") + 1);
         if (filename.isEmpty() || filename.contains("/") || filename.contains("\\")) {
             writer.println("ERROR: Invalid filename");
             return;
@@ -102,7 +94,6 @@ public class FTP extends Thread {
         while ((bytesRead = nextClient.getInputStream().read(buffer)) != -1) {
             fileOutputStream.write(buffer, 0, bytesRead);
         }
-
         fileOutputStream.close();
         writer.println("SUCCESS: File uploaded successfully");
         return;
