@@ -122,16 +122,17 @@ public class FTP extends Thread {
         byte[] buffer = new byte[4096];
         int bytesRead;
 
-        // Read destination path from the client
-        String destinationPath = reader.readLine();
+        
+        String destinationPath = reader.readLine();// read destination path from client
 
-        // Create the destination file
-        File destinationFile = new File(destinationPath);
+//        System.out.println("destination path: " + destinationPath);
+        File destinationFile = new File(destinationPath); // create destination file
+//       System.out.println("destination file: " + destinationFile);
         FileOutputStream fileOutputStream = new FileOutputStream(destinationFile);
 
-        // Write the downloaded file to the destination path
-        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+        try (FileInputStream fileInputStream = new FileInputStream(file)) { // write the downloaded file to destination path
             while ((bytesRead = fileInputStream.read(buffer)) != -1) {
+            	System.out.println("before write");
                 fileOutputStream.write(buffer, 0, bytesRead);
             }
         }
