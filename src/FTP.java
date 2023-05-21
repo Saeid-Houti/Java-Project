@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.io.FileInputStream;
 
 public class FTP extends Thread {
     private static final String USER_HOME = System.getProperty("user.home");
@@ -100,7 +101,8 @@ public class FTP extends Thread {
     }
 
     private void handleDownload(String request, BufferedReader reader, PrintWriter writer) throws IOException {
-        String filename = request.substring(request.indexOf(' ') + 1);
+        String readerLine = reader.readLine();
+        String filename = readerLine.substring(readerLine.indexOf(" ") + 1);
         if (filename.isEmpty()) {
             writer.println("ERROR: Invalid filename");
             return;
@@ -119,13 +121,25 @@ public class FTP extends Thread {
 
         byte[] buffer = new byte[4096];
         int bytesRead;
-        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-            while ((bytesRead = nextClient.getInputStream().read(buffer)) != -1) {
+
+        // Read destination path from the client
+        String destinationPath = reader.readLine();
+
+        // Create the destination file
+        File destinationFile = new File(destinationPath);
+        FileOutputStream fileOutputStream = new FileOutputStream(destinationFile);
+
+        // Write the downloaded file to the destination path
+        try (FileInputStream fileInputStream = new FileInputStream(file)) {
+            while ((bytesRead = fileInputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
             }
         }
 
-        writer.println("SUCCESS: File downloaded successfully");
+        fileOutputStream.close();
+
+        writer.println("SUCCESS: File downloaded and saved successfully");
         return;
     }
+
 }

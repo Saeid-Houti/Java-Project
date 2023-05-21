@@ -81,14 +81,15 @@ public class Client {
                         			System.out.println("File size: " + fileSize);
                         			if (fileSize.equals("Canceled.")) break;
                         			if (!fileSize.startsWith("ERROR")) {
-                        				System.out.println("Enter the destination path: ");
-                        				String destinationPath = from_user.readLine();
-                        				to_ftpServer.println(destinationPath);
-                        				
-                        				response = from_ftpServer.readLine();
-                        				System.out.println(response);
-                        				break;
+                        			    System.out.println("Enter the destination path: ");
+                        			    String destinationPath = from_user.readLine();
+                        			    to_ftpServer.println(destinationPath);
+
+                        			    response = from_ftpServer.readLine();
+                        			    System.out.println(response);
+                        			    break;
                         			}
+
                         		} 
                         		else if (serviceNeeded.equals("CANCEL")) System.exit(1);
                         		else {
